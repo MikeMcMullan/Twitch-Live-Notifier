@@ -40,7 +40,7 @@ class TwitchServiceProvider extends ServiceProvider {
     {
         $this->app->bind('PushBullet', function($app)
         {
-            return new PushBullet('EwtPE2M1NN1doi1ZCFIoOWpIZ8h4BqI6');
+            return new PushBullet($app->make('config')->get('services.pushbullet.api-key'));
         });
     }
 }

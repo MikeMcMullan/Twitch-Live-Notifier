@@ -28,4 +28,8 @@ return array(
 		'secret' => '',
 	),
 
+    'pushbullet' => [
+        'api-key' => getenv('PUSH_BULLET_API_KEY')
+    ]
+
 );
