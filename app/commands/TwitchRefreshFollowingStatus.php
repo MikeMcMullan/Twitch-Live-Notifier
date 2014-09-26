@@ -4,6 +4,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Twitch\ChannelStatusUpdater;
+use Twitch\Notifier;
 
 class TwitchRefreshFollowingStatus extends Command {
 
@@ -24,17 +25,23 @@ class TwitchRefreshFollowingStatus extends Command {
      * @var ChannelStatusUpdater
      */
     private $channel;
+    /**
+     * @var Notifier
+     */
+    private $notifier;
 
     /**
      * Create a new command instance.
      *
      * @param ChannelStatusUpdater $channel
+     * @param Notifier $notifier
      * @return \twitchRefreshFollowingStatus
      */
-	public function __construct(ChannelStatusUpdater $channel)
+	public function __construct(ChannelStatusUpdater $channel, Notifier $notifier)
 	{
 		parent::__construct();
         $this->channel = $channel;
+        $this->notifier = $notifier;
     }
 
 	/**
@@ -48,8 +55,15 @@ class TwitchRefreshFollowingStatus extends Command {
 
         if ( ! empty($liveChannels))
         {
-            $push = App::make('PushBullet');
-            $push->pushNote('', 'Twitch broadcasters went live', implode(', ', $liveChannels));
+            $title = 'Twitch broadcasters went live';
+            $items[] = implode(', ', array_fetch($liveChannels, 'channel.display_name')) . "\r\n\r\n";
+
+            foreach ($liveChannels as $channel)
+            {
+                $items[] = $channel['channel']['display_name'] . ': ' . $channel['game'];
+            }
+
+            $this->notifier->send('', $title, implode("\r\n\r\n", $items));
             $this->info('Notifications sent.');
         }
         else
