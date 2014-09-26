@@ -18,8 +18,13 @@ class TwitchServiceProvider extends ServiceProvider {
         $this->registerTwitchSDK();
 
         $this->registerPushBulletNotifier();
+
+        $this->setNotifier();
     }
 
+    /**
+     * Register the Twitch SDK
+     */
     private function registerTwitchSDK()
     {
         $this->app->bind('ritero\SDK\TwitchTV\TwitchSDK', function($app)
@@ -36,11 +41,22 @@ class TwitchServiceProvider extends ServiceProvider {
         $this->app->bind('TwitchSDK', 'ritero\SDK\TwitchTV\TwitchSDK');
     }
 
+    /**
+     * Register the PushBullet Notifier
+     */
     private function registerPushBulletNotifier()
     {
         $this->app->bind('PushBullet', function($app)
         {
             return new PushBullet($app->make('config')->get('services.pushbullet.api-key'));
         });
+    }
+
+    /**
+     * Set which Notifier is to be used.
+     */
+    private function setNotifier()
+    {
+        $this->app->bind('Twitch\Notifier', 'Twitch\Notifiers\PushBullet');
     }
 }
