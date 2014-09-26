@@ -3,22 +3,24 @@
 namespace Twitch;
 
 use Channel;
+use ritero\SDK\TwitchTV\TwitchSDK;
 
 class InvalidChannels extends \Exception {}
+class InvalidUserException extends \Exception {}
 
 class ChannelStatusUpdater {
 
     /**
-     * @var TwitchUser
+     * @var TwitchSDK
      */
-    private $user;
+    private $sdk;
 
     /**
-     * @param TwitchUser $user
+     * @param TwitchSDKAdapter $sdk
      */
-    public function __construct(TwitchUser $user)
+    public function __construct(TwitchSDKAdapter $sdk)
     {
-        $this->user = $user;
+        $this->sdk = $sdk;
     }
 
     /**
@@ -28,17 +30,23 @@ class ChannelStatusUpdater {
      */
     public function populateFollowing($username)
     {
-        $following = $this->user->getFollowing($username);
+        $following = $this->sdk->userFollowChannels($username, 100);
 
-        foreach($following as $channel)
+        if (array_get($following, 'error'))
+        {
+            throw new InvalidUserException($following['message']);
+        }
+
+        foreach($following['follows'] as $channel)
         {
             Channel::firstOrCreate([
-                'user' => $username,
-                'name' => $channel['name']
+                'user'          => $username,
+                'display_name'  => $channel['channel']['display_name'],
+                'name'          => $channel['channel']['name']
             ]);
         }
 
-        return array_fetch($following, 'name');
+        return $following;
     }
 
     /**
@@ -48,11 +56,11 @@ class ChannelStatusUpdater {
      */
     public function refresh($username)
     {
-        $channels = $this->getChannels($username);
-        $liveChannels = array_fetch($this->user->getStreamingChannels($channels->toArray()), 'name');
+        $followedChannels = $this->getChannels($username);
+        $liveChannels = $this->sdk->getStreams(null, null, null, implode(',', $followedChannels->lists('name')));
 
-        $isLive = $this->getLiveChannels($channels, $liveChannels);
-        $offline= $this->getOfflineChannels($channels, $liveChannels);
+        $isLive = $this->getLiveChannels($followedChannels, $liveChannels);
+        $offline= $this->getOfflineChannels($followedChannels, $liveChannels);
 
         $this->updateOfflineChannels($offline);
         $this->updateLiveChannels($isLive);
@@ -65,13 +73,14 @@ class ChannelStatusUpdater {
      * @param $liveChannels
      * @return array
      */
-    private function getOfflineChannels($channels, array $liveChannels)
+    private function getOfflineChannels($channels, $liveChannels)
     {
         $channelNames = [];
+        $liveChannelNames = $liveChannels->make($liveChannels['streams'])->fetch('channel.name');
 
         foreach($channels as $channel)
         {
-            if ( ! in_array($channel->name, $liveChannels) && $channel->is_live != false)
+            if ( ! in_array($channel->name, $liveChannelNames->toArray()) && $channel->is_live != false)
             {
                 $channelNames[] = $channel->name;
             }
@@ -81,23 +90,27 @@ class ChannelStatusUpdater {
     }
 
     /**
-     * @param $channels
+     * @param $followedChannels
      * @param $liveChannels
      * @return array
      */
-    private function getLiveChannels($channels, $liveChannels)
+    private function getLiveChannels($followedChannels, $liveChannels)
     {
-        $channelNames = [];
+        $channels = [];
+        $liveChannelNames = $liveChannels->make($liveChannels['streams']);
 
-        foreach($channels as $channel)
+        foreach($followedChannels as $channel)
         {
-            if (in_array($channel->name, $liveChannels) && $channel->is_live != true)
+            $liveChannelNames->first(function($key, $value) use(&$channels, $channel)
             {
-                $channelNames[] = $channel->name;
-            }
+                if ($channel->name === $value['channel']['name'] && $channel->is_live != true)
+                {
+                    $channels[] = $value;
+                }
+            });
         }
 
-        return $channelNames;
+        return $channels;
     }
 
     /**
@@ -111,7 +124,7 @@ class ChannelStatusUpdater {
 
         if ($channels->isEmpty())
         {
-            throw new InvalidChannels('You are not following any channels or haven\'t run populateFollowing() yet');
+            throw new InvalidChannels("'{$username}' is not following any channels or they have not been imported yet.");
         }
 
         return $channels;
@@ -128,12 +141,21 @@ class ChannelStatusUpdater {
     }
 
     /**
-     * @param $channelNames
+     * @param $channels
      * @internal param $channel_names
      * @return mixed
      */
-    private function updateLiveChannels($channelNames)
+    private function updateLiveChannels($channels)
     {
-        return ! empty($channelNames) &&Channel::whereIn('name', $channelNames)->update(['is_live' => true]);
+        if ( ! empty($channels))
+        {
+            foreach($channels as $channel)
+            {
+                Channel::where('name', '=', $channel['channel']['name'])->update([
+                    'is_live' => true,
+                    'game'    => $channel['game']
+                ]);
+            }
+        }
     }
-} 
+}
