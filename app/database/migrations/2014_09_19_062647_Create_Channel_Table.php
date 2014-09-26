@@ -17,6 +17,8 @@ class CreateChannelTable extends Migration {
             $table->increments('id');
             $table->string('user');
             $table->string('name');
+            $table->string('display_name');
+            $table->string('game')->nullable();
             $table->boolean('is_live')->default(0);
             $table->timestamps();
         });
