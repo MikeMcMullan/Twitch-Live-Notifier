@@ -56,14 +56,16 @@ class TwitchRefreshFollowingStatus extends Command {
         if ( ! empty($liveChannels))
         {
             $title = 'Twitch broadcasters went live';
-            $items[] = implode(', ', array_fetch($liveChannels, 'channel.display_name')) . "\r\n\r\n";
+            $items[] = implode(', ', array_fetch($liveChannels, 'channel.display_name'));
+            $items[] = '-------------';
 
             foreach ($liveChannels as $channel)
             {
                 $items[] = $channel['channel']['display_name'] . ': ' . $channel['game'];
             }
 
-            $this->notifier->send('', $title, implode("\r\n\r\n", $items));
+            $response = $this->notifier->send('', $title, implode("\r\n", $items));
+
             $this->info('Notifications sent.');
         }
         else
