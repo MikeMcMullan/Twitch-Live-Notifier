@@ -13,3 +13,4 @@
 
 Artisan::add(App::make('TwitchPopulateFollowing'));
 Artisan::add(App::make('TwitchRefreshFollowingStatus'));
+Artisan::add(App::make('TwitchDeleteOldPushBullets'));

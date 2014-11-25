@@ -66,6 +66,8 @@ class TwitchRefreshFollowingStatus extends Command {
 
             $response = $this->notifier->send('', $title, implode("\r\n", $items));
 
+            Notification::create([ 'iden' => $response->iden ]);
+
             $this->info('Notifications sent.');
         }
         else

@@ -44,7 +44,7 @@ class TwitchSDKAdapter {
             return $this->convertToCollection($response);
         }
 
-        throw new BadMethodCallException;
+        throw new \BadMethodCallException;
     }
 
 } 
