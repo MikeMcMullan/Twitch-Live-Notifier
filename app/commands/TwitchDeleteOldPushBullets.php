@@ -53,7 +53,7 @@ class TwitchDeleteOldPushBullets extends Command {
 				$this->info('Push ' . $notification->iden . ' was deleted.');
 			});
 
-			$notifications->first()->truncate();
+			Notification::truncate();
 		}
 	}
 }
