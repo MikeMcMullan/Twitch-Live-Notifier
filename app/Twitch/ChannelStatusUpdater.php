@@ -37,7 +37,23 @@ class ChannelStatusUpdater {
             throw new InvalidUserException($following['message']);
         }
 
-        foreach($following['follows'] as $channel)
+        $this->addFollowed($following['follows'], $username);
+        $this->removeNoLongerFollowedPeople($following['follows'], $username);
+
+        return $following;
+    }
+
+    private function removeNoLongerFollowedPeople(array $follows, $username)
+    {
+        $currentlyFollowing = Channel::where('user', $username)->lists('name');
+        $noLongerFollowed = array_diff($currentlyFollowing, array_fetch($follows, 'channel.name'));
+
+        Channel::whereIn('name', $noLongerFollowed)->delete();
+    }
+
+    private function addFollowed(array $follows, $username)
+    {
+        foreach ($follows as $channel)
         {
             Channel::firstOrCreate([
                 'user'          => $username,
@@ -45,8 +61,6 @@ class ChannelStatusUpdater {
                 'name'          => $channel['channel']['name']
             ]);
         }
-
-        return $following;
     }
 
     /**
