@@ -1,26 +1,19 @@
 <?php
 
 use Twitch\ChannelStatusUpdater;
-use Twitch\TwitchUser;
 
 class HomeController extends BaseController {
 
-    /**
-     * @var TwitchSDK
-     */
-    private $twitch;
     /**
      * @var TwitchService
      */
     private $service;
 
     /**
-     * @param TwitchUser $twitch
      * @param ChannelStatusUpdater $service
      */
-    public function __construct(TwitchUser $twitch, ChannelStatusUpdater $service)
+    public function __construct(ChannelStatusUpdater $service)
     {
-        $this->twitch = $twitch;
         $this->channel = $service;
     }
 
@@ -29,18 +22,21 @@ class HomeController extends BaseController {
      */
     public function channels()
 	{
+//        var_dump($this->channel->populateFollowing('McsMike'));
+//        var_dump($this->channel->refresh('McsMike'));
+
 //        $this->service->populateFollowing('McsMike');
 //        exit;
 
 //        var_dump($this->twitch->getFollowing('McsMike'));
 
-        $liveChannels = $this->channel->refresh('McsMike');
-
-        if ( ! empty($liveChannels))
-        {
-            $push = App::make('PushBullet');
-            $push->pushNote('', 'Twitch broadcasters went live', implode(', ', $liveChannels));
-        }
+//        $liveChannels = $this->channel->refresh('McsMike');
+//
+//        if ( ! empty($liveChannels))
+//        {
+//            $push = App::make('PushBullet');
+//            $push->pushNote('', 'Twitch broadcasters went live', implode(', ', $liveChannels));
+//        }
 	}
 
 }
