@@ -10,15 +10,21 @@ class QuoteController extends \BaseController {
 	public function index()
 	{
 		$channel = Input::get('channel');
-		$quote = Quote::where('channel', '=', $channel)
-			->orderBy(DB::raw('RAND()'))
-			->limit(1)
-			->get();
 
-		if ( ! $quote->isEmpty())
+		$channelQuotes = QuoteChannels::with('quotes')
+			->where('name', '=', $channel)
+			->orWhere('key', '=', $channel)
+			->first();
+
+		if ($channelQuotes)
 		{
-			$quote = $quote->first();
-			return sprintf('Quote #%d "%s" - %s %s ', $quote->id, $quote->text, $quote->channel, $quote->created_at->format('F Y'));
+			$channel = $channelQuotes->display_name;
+			$quotes = $channelQuotes->quotes;
+			$randomQuote = array_rand($quotes->toArray());
+
+			$quote = $quotes[$randomQuote];
+
+			return sprintf('Quote #%d "%s" - %s %s ', $randomQuote+1, $quote->text, $channel, $quote->created_at->format('F Y'));
 		}
 
 		return 'No quotes available.';
@@ -33,9 +39,10 @@ class QuoteController extends \BaseController {
 	public function create()
 	{
 		$data = Input::only(['channel', 'text']);
+
 		$rules = [
-			'channel'  => 'required|alpha_dash',
-			'text'     => 'min:5|max:255'
+			'channel'  => 'required|alpha_num|min:32|max:32',
+			'text'     => 'required|min:5|max:255'
 		];
 
 		$validator = Validator::make($data, $rules);
@@ -45,12 +52,18 @@ class QuoteController extends \BaseController {
 			return $validator->messages()->first();
 		}
 
+		$channel = QuoteChannels::where('key', '=', $data['channel'])->first();
+
+		if ( ! $channel)
+		{
+			return 'Invalid channel.';
+		}
+
 		$quote = new Quote([
-			'text' 		=> $data['text'],
-			'channel'	=> $data['channel']
+			'text' => $data['text']
 		]);
 
-		if ($quote->save())
+		if ($channel->quotes()->save($quote))
 		{
 			return sprintf('Quote added: "%s"', $data['text']);
 		}

@@ -15,9 +15,17 @@ class CreateQuotesTable extends Migration {
 		Schema::create('quotes', function($table)
 		{
 			$table->increments('id');
+			$table->integer('quote_channels_id');
 			$table->string('text');
-			$table->string('channel');
 			$table->timestamps();
+		});
+
+		Schema::create('quote_channels', function($table)
+		{
+			$table->increments('id');
+			$table->string('key');
+			$table->string('name');
+			$table->string('display_name');
 		});
 	}
 
@@ -29,6 +37,7 @@ class CreateQuotesTable extends Migration {
 	public function down()
 	{
 		Schema::drop('quotes');
+		Schema::drop('quote_channels');
 	}
 
 }
