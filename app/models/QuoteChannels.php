@@ -8,6 +8,6 @@ class QuoteChannels extends Eloquent {
 
     public function quotes()
     {
-        return $this->hasMany('quote');
+        return $this->hasMany('Quote');
     }
 }
