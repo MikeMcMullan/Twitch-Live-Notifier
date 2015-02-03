@@ -49,8 +49,15 @@ class TwitchDeleteOldPushBullets extends Command {
 		{
 			$notifications->each(function($notification)
 			{
-				$this->sdk->deletePush($notification->iden);
-				$this->info('Push ' . $notification->iden . ' was deleted.');
+				try
+				{
+					$this->sdk->deletePush($notification->iden);
+					$this->info('Push ' . $notification->iden . ' was deleted.');
+				}
+				catch(Exception $e)
+				{
+					$this->error($e->getMessage());
+				}
 			});
 
 			Notification::truncate();
