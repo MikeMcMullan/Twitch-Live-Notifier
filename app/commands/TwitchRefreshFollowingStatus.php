@@ -51,6 +51,14 @@ class TwitchRefreshFollowingStatus extends Command {
 	 */
 	public function fire()
 	{
+        $quietTime = new Twitch\QuietTime\QuietTime();
+        $quietTime->add(new Twitch\QuietTime\Time(2, 0, 9));
+
+        if ($quietTime->active())
+        {
+            return;
+        }
+
         $liveChannels = $this->channel->refresh('McsMike');
 
         if ( ! empty($liveChannels))
